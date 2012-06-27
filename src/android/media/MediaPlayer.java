@@ -16,29 +16,7 @@
 
 package android.media;
 
-//import android.content.ContentResolver;
-//import android.content.Context;
-//import android.content.res.AssetFileDescriptor;
-//import android.net.Uri;
-//import android.os.Handler;
-//import android.os.Looper;
-//import android.os.Message;
-//import android.os.Parcel;
-//import android.os.ParcelFileDescriptor;
-//import android.os.PowerManager;
-//import android.util.Log;
-//import android.view.Surface;
-//import android.view.SurfaceHolder;
-//import android.graphics.Bitmap;
-//import android.graphics.SurfaceTexture;
-//import android.media.AudioManager;
 import android.media.player.external.*;
-
-import java.io.FileDescriptor;
-import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
-import java.lang.ref.WeakReference;
 
 /**
  * MediaPlayer class can be used to control playback
