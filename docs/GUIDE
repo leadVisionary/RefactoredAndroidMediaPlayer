@@ -86,7 +86,7 @@
  *         error conditions, the internal player engine invokes a user supplied
  *         OnErrorListener.onError() method if an OnErrorListener has been
  *         registered beforehand via
- *         {@link #setOnErrorListener(android.media.MediaPlayer.OnErrorListener)}.
+ *         {@link #setOnErrorListener(android.media.player.MediaPlayer.OnErrorListener)}.
  *         <ul>
  *         <li>It is important to note that once an error occurs, the
  *         MediaPlayer object enters the <em>Error</em> state (except as noted
@@ -135,7 +135,7 @@
  *         the internal player engine then calls a user supplied callback method,
  *         onPrepared() of the OnPreparedListener interface, if an
  *         OnPreparedListener is registered beforehand via {@link
- *         #setOnPreparedListener(android.media.MediaPlayer.OnPreparedListener)}.</li>
+ *         #setOnPreparedListener(android.media.player.MediaPlayer.OnPreparedListener)}.</li>
  *         <li>It is important to note that
  *         the <em>Preparing</em> state is a transient state, and the behavior
  *         of calling any method with side effect while a MediaPlayer object is

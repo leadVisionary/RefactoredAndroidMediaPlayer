@@ -4,12 +4,14 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
+import android.media.player.RefactoredMediaPlayer;
+
 public class MediaPlayerTest {
 	MediaPlayer toTest;
 	
 	@Test
 	public void testCreateAMediaPlayer() {
-		toTest = new MediaPlayer();
+		toTest = new RefactoredMediaPlayer();
 		assertNotNull(toTest);
 	}
 
