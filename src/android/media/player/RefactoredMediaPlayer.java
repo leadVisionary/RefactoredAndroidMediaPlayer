@@ -23,26 +23,19 @@ import android.media.player.listeners.*;
  */
 public class RefactoredMediaPlayer implements MediaPlayer
 {
-    static {
-        System.loadLibrary("media_jni");
-        native_init();
-    }
-
     private final static String TAG = "MediaPlayer";
     // Name of the remote interface for the media player. Must be kept
     // in sync with the 2nd parameter of the IMPLEMENT_META_INTERFACE
     // macro invocation in IMediaPlayer.cpp
     private final static String IMEDIA_PLAYER = "android.media.IMediaPlayer";
 
-    private int mNativeContext; // accessed by native methods
-    private int mNativeSurfaceTexture;  // accessed by native methods
-    private int mListenerContext; // accessed by native methods
-    private SurfaceHolder mSurfaceHolder;
+    private NativeBridge bridge = new NativeBridge(this);
+	private SurfaceHolder mSurfaceHolder;
     private EventHandler mEventHandler;
     private PowerManager.WakeLock mWakeLock = null;
     private boolean mScreenOnWhilePlaying;
     private boolean mStayAwake;
-    private Looper looper;
+    
 
     /**
      * Default constructor. Consider using one of the create() methods for
@@ -52,20 +45,12 @@ public class RefactoredMediaPlayer implements MediaPlayer
      * result in an exception.</p>
      */
     public RefactoredMediaPlayer() {
-    	initialize();
+    	setupEventHandler();
     }
 
-	private void initialize() {
-		setupEventHandler();
-
-        /* Native setup requires a weak reference to our object.
-         * It's easier to create it here than in C++.
-         */
-        native_setup(new WeakReference<RefactoredMediaPlayer>(this));
-	}
-
-	private void setupEventHandler() {
-		if ((looper = Looper.myLooper()) != null) {
+    private void setupEventHandler() {
+    	Looper looper;
+    	if ((looper = Looper.myLooper()) != null) {
             mEventHandler = new EventHandler(this, looper);
         } else if ((looper = Looper.getMainLooper()) != null) {
             mEventHandler = new EventHandler(this, looper);
@@ -81,7 +66,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     private native void _setVideoSurface(Surface surface);
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#newRequest()
+	 * @see android.media.MediaPlayer#newRequest()
 	 */
     @Override
 	public Parcel newRequest() {
@@ -91,17 +76,17 @@ public class RefactoredMediaPlayer implements MediaPlayer
     }
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#invoke(android.media.player.external.Parcel, android.media.player.external.Parcel)
+	 * @see android.media.MediaPlayer#invoke(android.media.player.external.Parcel, android.media.player.external.Parcel)
 	 */
     @Override
 	public int invoke(Parcel request, Parcel reply) {
-        int retcode = native_invoke(request, reply);
+        int retcode = NativeBridge.getParcelReturnCode(this, request, reply);
         reply.setDataPosition(0);
         return retcode;
     }
 
-    /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setDisplay(android.media.player.external.SurfaceHolder)
+	/* (non-Javadoc)
+	 * @see android.media.MediaPlayer#setDisplay(android.media.player.external.SurfaceHolder)
 	 */
     @Override
 	public void setDisplay(SurfaceHolder sh) {
@@ -117,7 +102,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     }
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setSurface(android.media.player.external.Surface)
+	 * @see android.media.MediaPlayer#setSurface(android.media.player.external.Surface)
 	 */
     @Override
 	public void setSurface(Surface surface) {
@@ -219,7 +204,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     }
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setDataSource(android.media.player.external.Context, android.media.player.external.Uri)
+	 * @see android.media.MediaPlayer#setDataSource(android.media.player.external.Context, android.media.player.external.Uri)
 	 */
     @Override
 	public void setDataSource(Context context, Uri uri)
@@ -228,7 +213,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     }
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setDataSource(android.media.player.external.Context, android.media.player.external.Uri, android.media.player.external.Map)
+	 * @see android.media.MediaPlayer#setDataSource(android.media.player.external.Context, android.media.player.external.Uri, android.media.player.external.Map)
 	 */
     @Override
 	public void setDataSource(Context context, Uri uri, Map headers)
@@ -270,14 +255,14 @@ public class RefactoredMediaPlayer implements MediaPlayer
     }
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setDataSource(java.lang.String)
+	 * @see android.media.MediaPlayer#setDataSource(java.lang.String)
 	 */
     @Override
 	public native void setDataSource(String path)
             throws IOException, IllegalArgumentException, SecurityException, IllegalStateException;
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setDataSource(java.lang.String, android.media.player.external.Map)
+	 * @see android.media.MediaPlayer#setDataSource(java.lang.String, android.media.player.external.Map)
 	 */
     @Override
 	public void setDataSource(String path, Map headers)
@@ -305,7 +290,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
         throws IOException, IllegalArgumentException, SecurityException, IllegalStateException;
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setDataSource(android.media.player.external.FileDescriptor)
+	 * @see android.media.MediaPlayer#setDataSource(android.media.player.external.FileDescriptor)
 	 */
     @Override
 	public void setDataSource(FileDescriptor fd)
@@ -315,7 +300,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     }
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setDataSource(android.media.player.external.FileDescriptor, long, long)
+	 * @see android.media.MediaPlayer#setDataSource(android.media.player.external.FileDescriptor, long, long)
 	 */
     @Override
 	public native void setDataSource(FileDescriptor fd, long offset, long length)
@@ -323,19 +308,19 @@ public class RefactoredMediaPlayer implements MediaPlayer
 
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#prepare()
+	 * @see android.media.MediaPlayer#prepare()
 	 */
     @Override
 	public native void prepare() throws IOException, IllegalStateException;
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#prepareAsync()
+	 * @see android.media.MediaPlayer#prepareAsync()
 	 */
     @Override
 	public native void prepareAsync() throws IllegalStateException;
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#start()
+	 * @see android.media.MediaPlayer#start()
 	 */
     @Override
 	public  void start() throws IllegalStateException {
@@ -346,7 +331,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     private native void _start() throws IllegalStateException;
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#stop()
+	 * @see android.media.MediaPlayer#stop()
 	 */
     @Override
 	public void stop() throws IllegalStateException {
@@ -357,7 +342,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     private native void _stop() throws IllegalStateException;
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#pause()
+	 * @see android.media.MediaPlayer#pause()
 	 */
     @Override
 	public void pause() throws IllegalStateException {
@@ -368,7 +353,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     private native void _pause() throws IllegalStateException;
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setWakeMode(android.media.player.external.Context, int)
+	 * @see android.media.MediaPlayer#setWakeMode(android.media.player.external.Context, int)
 	 */
     @Override
 	public void setWakeMode(Context context, int mode) {
@@ -390,7 +375,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     }
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setScreenOnWhilePlaying(boolean)
+	 * @see android.media.MediaPlayer#setScreenOnWhilePlaying(boolean)
 	 */
     @Override
 	public void setScreenOnWhilePlaying(boolean screenOn) {
@@ -404,7 +389,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     }
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#stayAwake(boolean)
+	 * @see android.media.MediaPlayer#stayAwake(boolean)
 	 */
     @Override
 	public void stayAwake(boolean awake) {
@@ -426,43 +411,43 @@ public class RefactoredMediaPlayer implements MediaPlayer
     }
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#getVideoWidth()
+	 * @see android.media.MediaPlayer#getVideoWidth()
 	 */
     @Override
 	public native int getVideoWidth();
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#getVideoHeight()
+	 * @see android.media.MediaPlayer#getVideoHeight()
 	 */
     @Override
 	public native int getVideoHeight();
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#isPlaying()
+	 * @see android.media.MediaPlayer#isPlaying()
 	 */
     @Override
 	public native boolean isPlaying();
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#seekTo(int)
+	 * @see android.media.MediaPlayer#seekTo(int)
 	 */
     @Override
 	public native void seekTo(int msec) throws IllegalStateException;
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#getCurrentPosition()
+	 * @see android.media.MediaPlayer#getCurrentPosition()
 	 */
     @Override
 	public native int getCurrentPosition();
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#getDuration()
+	 * @see android.media.MediaPlayer#getDuration()
 	 */
     @Override
 	public native int getDuration();
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#getMetadata(boolean, boolean)
+	 * @see android.media.MediaPlayer#getMetadata(boolean, boolean)
 	 */
     @Override
 	public Metadata getMetadata(final boolean update_only,
@@ -485,7 +470,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     }
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setMetadataFilter(android.media.player.external.Set, android.media.player.external.Set)
+	 * @see android.media.MediaPlayer#setMetadataFilter(android.media.player.external.Set, android.media.player.external.Set)
 	 */
     @Override
 	public int setMetadataFilter(Set allow, Set block) {
@@ -518,7 +503,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     }
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#release()
+	 * @see android.media.MediaPlayer#release()
 	 */
     @Override
 	public void release() {
@@ -538,7 +523,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     private native void _release();
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#reset()
+	 * @see android.media.MediaPlayer#reset()
 	 */
     @Override
 	public void reset() {
@@ -551,49 +536,49 @@ public class RefactoredMediaPlayer implements MediaPlayer
     private native void _reset();
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setAudioStreamType(int)
+	 * @see android.media.MediaPlayer#setAudioStreamType(int)
 	 */
     @Override
 	public native void setAudioStreamType(int streamtype);
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setLooping(boolean)
+	 * @see android.media.MediaPlayer#setLooping(boolean)
 	 */
     @Override
 	public native void setLooping(boolean looping);
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#isLooping()
+	 * @see android.media.MediaPlayer#isLooping()
 	 */
     @Override
 	public native boolean isLooping();
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setVolume(float, float)
+	 * @see android.media.MediaPlayer#setVolume(float, float)
 	 */
     @Override
 	public native void setVolume(float leftVolume, float rightVolume);
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#getFrameAt(int)
+	 * @see android.media.MediaPlayer#getFrameAt(int)
 	 */
     @Override
 	public native Bitmap getFrameAt(int msec) throws IllegalStateException;
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setAudioSessionId(int)
+	 * @see android.media.MediaPlayer#setAudioSessionId(int)
 	 */
     @Override
 	public native void setAudioSessionId(int sessionId)  throws IllegalArgumentException, IllegalStateException;
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#getAudioSessionId()
+	 * @see android.media.MediaPlayer#getAudioSessionId()
 	 */
     @Override
 	public native int getAudioSessionId();
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#attachAuxEffect(int)
+	 * @see android.media.MediaPlayer#attachAuxEffect(int)
 	 */
     @Override
 	public native void attachAuxEffect(int effectId);
@@ -624,13 +609,13 @@ public class RefactoredMediaPlayer implements MediaPlayer
     // private static final int KEY_PARAMETER_... = ...;
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setParameter(int, android.media.player.external.Parcel)
+	 * @see android.media.MediaPlayer#setParameter(int, android.media.player.external.Parcel)
 	 */
     @Override
 	public native boolean setParameter(int key, Parcel value);
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setParameter(int, java.lang.String)
+	 * @see android.media.MediaPlayer#setParameter(int, java.lang.String)
 	 */
     @Override
 	public boolean setParameter(int key, String value) {
@@ -642,7 +627,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     }
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setParameter(int, int)
+	 * @see android.media.MediaPlayer#setParameter(int, int)
 	 */
     @Override
 	public boolean setParameter(int key, int value) {
@@ -661,7 +646,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     private native void getParameter(int key, Parcel reply);
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#getParcelParameter(int)
+	 * @see android.media.MediaPlayer#getParcelParameter(int)
 	 */
     @Override
 	public Parcel getParcelParameter(int key) {
@@ -671,7 +656,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     }
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#getStringParameter(int)
+	 * @see android.media.MediaPlayer#getStringParameter(int)
 	 */
     @Override
 	public String getStringParameter(int key) {
@@ -683,7 +668,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     }
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#getIntParameter(int)
+	 * @see android.media.MediaPlayer#getIntParameter(int)
 	 */
     @Override
 	public int getIntParameter(int key) {
@@ -695,7 +680,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     }
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setAuxEffectSendLevel(float)
+	 * @see android.media.MediaPlayer#setAuxEffectSendLevel(float)
 	 */
     @Override
 	public native void setAuxEffectSendLevel(float level);
@@ -707,7 +692,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
      * @param reply[out] Parcel that will contain the reply.
      * @return The status code.
      */
-    private native final int native_invoke(Parcel request, Parcel reply);
+    native final int native_invoke(Parcel request, Parcel reply);
 
 
     /**
@@ -741,7 +726,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     private native final void native_finalize();
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#enableTimedTextTrackIndex(int)
+	 * @see android.media.MediaPlayer#enableTimedTextTrackIndex(int)
 	 */
     @Override
 	public boolean enableTimedTextTrackIndex(int index) {
@@ -752,7 +737,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     }
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#enableTimedText()
+	 * @see android.media.MediaPlayer#enableTimedText()
 	 */
     @Override
 	public boolean enableTimedText() {
@@ -760,7 +745,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     }
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#disableTimedText()
+	 * @see android.media.MediaPlayer#disableTimedText()
 	 */
     @Override
 	public boolean disableTimedText() {
@@ -801,7 +786,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     }
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setOnPreparedListener(android.media.player.listeners.OnPreparedListener)
+	 * @see android.media.MediaPlayer#setOnPreparedListener(android.media.player.listeners.OnPreparedListener)
 	 */
     @Override
 	public void setOnPreparedListener(OnPreparedListener listener)
@@ -816,7 +801,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
 	private OnPreparedListener mOnPreparedListener;
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setOnCompletionListener(android.media.player.listeners.OnCompletionListener)
+	 * @see android.media.MediaPlayer#setOnCompletionListener(android.media.player.listeners.OnCompletionListener)
 	 */
     @Override
 	public void setOnCompletionListener(OnCompletionListener listener)
@@ -831,7 +816,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
 	private OnCompletionListener mOnCompletionListener;
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setOnBufferingUpdateListener(android.media.player.listeners.OnBufferingUpdateListener)
+	 * @see android.media.MediaPlayer#setOnBufferingUpdateListener(android.media.player.listeners.OnBufferingUpdateListener)
 	 */
     @Override
 	public void setOnBufferingUpdateListener(OnBufferingUpdateListener listener)
@@ -842,7 +827,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     private OnBufferingUpdateListener mOnBufferingUpdateListener;
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setOnSeekCompleteListener(android.media.player.listeners.OnSeekCompleteListener)
+	 * @see android.media.MediaPlayer#setOnSeekCompleteListener(android.media.player.listeners.OnSeekCompleteListener)
 	 */
     @Override
 	public void setOnSeekCompleteListener(OnSeekCompleteListener listener)
@@ -853,7 +838,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     private OnSeekCompleteListener mOnSeekCompleteListener;
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setOnVideoSizeChangedListener(android.media.player.listeners.OnVideoSizeChangedListener)
+	 * @see android.media.MediaPlayer#setOnVideoSizeChangedListener(android.media.player.listeners.OnVideoSizeChangedListener)
 	 */
     @Override
 	public void setOnVideoSizeChangedListener(OnVideoSizeChangedListener listener)
@@ -864,7 +849,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     private OnVideoSizeChangedListener mOnVideoSizeChangedListener;
 
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setOnTimedTextListener(android.media.player.listeners.OnTimedTextListener)
+	 * @see android.media.MediaPlayer#setOnTimedTextListener(android.media.player.listeners.OnTimedTextListener)
 	 */
     @Override
 	public void setOnTimedTextListener(OnTimedTextListener listener)
@@ -879,7 +864,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
 	private OnTimedTextListener mOnTimedTextListener;
 
 	/* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setOnErrorListener(android.media.player.listeners.OnErrorListener)
+	 * @see android.media.MediaPlayer#setOnErrorListener(android.media.player.listeners.OnErrorListener)
 	 */
     @Override
 	public void setOnErrorListener(OnErrorListener listener)
@@ -892,7 +877,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
 
     
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#setOnInfoListener(android.media.player.listeners.OnInfoListener)
+	 * @see android.media.MediaPlayer#setOnInfoListener(android.media.player.listeners.OnInfoListener)
 	 */
     @Override
 	public void setOnInfoListener(OnInfoListener listener)
@@ -903,7 +888,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     private OnInfoListener mOnInfoListener;
     
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#logUnhandledEvent()
+	 * @see android.media.MediaPlayer#logUnhandledEvent()
 	 */
     @Override
 	public void logUnhandledEvent(){
@@ -911,15 +896,15 @@ public class RefactoredMediaPlayer implements MediaPlayer
     }
     
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#hasNoNativeContext()
+	 * @see android.media.MediaPlayer#hasNoNativeContext()
 	 */
     @Override
 	public boolean hasNoNativeContext(){
-    	return mNativeContext == 0;
+    	return bridge.getmNativeContext() == 0;
     }
     
     /* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#handleMediaPrepared()
+	 * @see android.media.MediaPlayer#handleMediaPrepared()
 	 */
     @Override
 	public void handleMediaPrepared(){
@@ -928,7 +913,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     }
 
 	/* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#handlePlaybackComplete()
+	 * @see android.media.MediaPlayer#handlePlaybackComplete()
 	 */
 	@Override
 	public void handlePlaybackComplete() {
@@ -938,7 +923,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
 	}
 
 	/* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#handleBufferingUpdate(int)
+	 * @see android.media.MediaPlayer#handleBufferingUpdate(int)
 	 */
 	@Override
 	public void handleBufferingUpdate(int arg1) {
@@ -947,7 +932,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
 	}
 
 	/* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#handleSeekComplete()
+	 * @see android.media.MediaPlayer#handleSeekComplete()
 	 */
 	@Override
 	public void handleSeekComplete() {
@@ -957,7 +942,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
 	}
 
 	/* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#handleSetVideoSize(int, int)
+	 * @see android.media.MediaPlayer#handleSetVideoSize(int, int)
 	 */
 	@Override
 	public void handleSetVideoSize(int arg1, int arg2) {
@@ -967,7 +952,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
 	}
 
 	/* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#handleError(int, int)
+	 * @see android.media.MediaPlayer#handleError(int, int)
 	 */
 	@Override
 	public void handleError(int arg1, int arg2) {
@@ -985,7 +970,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
     }
 
 	/* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#handleMediaInfo(int, int)
+	 * @see android.media.MediaPlayer#handleMediaInfo(int, int)
 	 */
 	@Override
 	public void handleMediaInfo(int arg1, int arg2) {
@@ -999,7 +984,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
 	}
 
 	/* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#handleTimedText(java.lang.Object)
+	 * @see android.media.MediaPlayer#handleTimedText(java.lang.Object)
 	 */
 	@Override
 	public void handleTimedText(Object object) {
@@ -1018,7 +1003,7 @@ public class RefactoredMediaPlayer implements MediaPlayer
 	}
 
 	/* (non-Javadoc)
-	 * @see android.media.MediaPlayerInterface#handleUnknown(int)
+	 * @see android.media.MediaPlayer#handleUnknown(int)
 	 */
 	@Override
 	public void handleUnknown(int what) {

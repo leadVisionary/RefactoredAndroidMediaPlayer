@@ -2,26 +2,8 @@ package android.media;
 
 import java.io.IOException;
 
-import android.media.player.external.AudioManager;
-import android.media.player.external.Bitmap;
-import android.media.player.external.Context;
-import android.media.player.external.FileDescriptor;
-import android.media.player.external.Map;
-import android.media.player.external.Metadata;
-import android.media.player.external.Parcel;
-import android.media.player.external.Set;
-import android.media.player.external.Surface;
-import android.media.player.external.SurfaceHolder;
-import android.media.player.external.SurfaceTexture;
-import android.media.player.external.Uri;
-import android.media.player.listeners.OnBufferingUpdateListener;
-import android.media.player.listeners.OnCompletionListener;
-import android.media.player.listeners.OnErrorListener;
-import android.media.player.listeners.OnInfoListener;
-import android.media.player.listeners.OnPreparedListener;
-import android.media.player.listeners.OnSeekCompleteListener;
-import android.media.player.listeners.OnTimedTextListener;
-import android.media.player.listeners.OnVideoSizeChangedListener;
+import android.media.player.external.*;
+import android.media.player.listeners.*;
 
 public interface MediaPlayer {
 
