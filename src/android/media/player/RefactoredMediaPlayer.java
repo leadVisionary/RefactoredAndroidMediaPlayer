@@ -21,7 +21,7 @@ import android.media.player.listeners.*;
  * @see <a href="docs/GUIDE">the original user guide</a>
  *
  */
-public class RefactoredMediaPlayer implements MediaPlayer
+public class RefactoredMediaPlayer implements EventedMediaPlayer
 {
     private final static String TAG = "MediaPlayer";
     // Name of the remote interface for the media player. Must be kept
@@ -45,12 +45,15 @@ public class RefactoredMediaPlayer implements MediaPlayer
      * result in an exception.</p>
      */
     public RefactoredMediaPlayer() {
-    	setupEventHandler();
+    	this(Looper.myLooper());
+    }
+    
+    public RefactoredMediaPlayer(Looper looper){
+    	setupEventHandler(looper);
     }
 
-    private void setupEventHandler() {
-    	Looper looper;
-    	if ((looper = Looper.myLooper()) != null) {
+    private void setupEventHandler(Looper looper) {
+    	if (looper != null) {
             mEventHandler = new EventHandler(this, looper);
         } else if ((looper = Looper.getMainLooper()) != null) {
             mEventHandler = new EventHandler(this, looper);

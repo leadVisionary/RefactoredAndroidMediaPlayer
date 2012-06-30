@@ -5,7 +5,7 @@ import android.media.player.external.*;
 
 class EventHandler extends Handler
 {
-    private MediaPlayer mMediaPlayer;
+    private EventedMediaPlayer mMediaPlayer;
     /* Do not change these values without updating their counterparts
      * in include/media/mediaplayer.h!
      */
@@ -23,7 +23,7 @@ class EventHandler extends Handler
 
     public EventHandler(MediaPlayer mp, Looper looper) {
         super(looper);
-        mMediaPlayer = mp;
+        mMediaPlayer = (EventedMediaPlayer)mp;
     }
 
     @Override
